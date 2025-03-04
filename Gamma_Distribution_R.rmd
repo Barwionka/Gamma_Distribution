@@ -1,0 +1,437 @@
+---
+title: "Data Analysis - Gamma distribution"
+author:
+  name: Król, Małkowska, Głuc
+  affiliation: Cracow University of Technology
+subtitle: Gamma distribution
+output:
+  html_document:
+    theme: readable
+    df_print: paged
+    toc: true
+    toc_float: true
+---
+```{r}
+library(tidyverse)
+library(ggpubr)
+set.seed(3141592)
+```
+
+# Euler's Gamma Function
+
+The Gamma function is one of the first "non-elementary" functions (along with the Gaussian function) that we encounter. It naturally generalizes the concept of factorials to all positive real numbers (and even complex numbers), except for zero and negative integers. There are many ways to define it, but the most common (and the most useful for our purposes) is given by the following expression
+\[ \Gamma(x) = \int_0^\infty t^{x -1}e^{-t}dt, \, \rm{dla } \,  x \in (0, \infty). \]
+
+Let’s look at some key useful properties (especially if someone wanted to derive formulas for the expected value and variance of the Gamma distribution).
+
+1. For any $x \in (0, \infty)$ we have $\Gamma(x +1) = x \Gamma(x)$.
+2. $\Gamma(1)=1$.
+3. For any $n \in \mathbb{Z}_+$ we have $\Gamma(n+1) = n!$.
+
+
+# Gamma distribution
+
+Now, let’s consider the general case of the Gamma distribution. From both a pure statistical and data analysis perspective, this is a very commonly occurring distribution. Its density function is given by the following formula:
+\[ f(x) = \frac{\lambda^k}{\Gamma(k)} x^{k - 1}e^{-\lambda x}, \, \rm{dla}\, x \in (0, \infty), \]
+where $k >0$ and $\lambda > 0$ are the parameters. A special case of the Gamma distribution is the Erlang distribution, where $k \in \mathbb{Z}_+$. The expected value of a variable with a Gamma distribution is $\frac{k}{\lambda}$, and its variance is $\frac{k}{\lambda^2}$. 
+
+### Task 1
+
+Generate 3 samples from the Gamma distribution with parameters $k, \lambda$. chosen by you (different for each sample). Compare the sample means and variances with the theoretical values. Draw histograms for each sample and compare them with the theoretical density. Also, plot the theoretical cumulative distribution functions (CDFs) for the variables (ideally all 3 on the same plot for comparison).
+
+*Make boxplots of the samples (it’s best to have all 3 on one plot).
+Hint: Use the function facet_wrap() in ggplot.
+
+1.1 Generating Samples from the Gamma Distribution
+
+```{r}
+set.seed(3141592)
+sample1 <- rgamma(1000, shape=5, rate=0.5)
+sample2 <- rgamma(1000, shape=2, rate=10)
+sample3 <- rgamma(1000, shape=4, rate=3)
+
+```
+
+1.2 Comparison of Sample Means and Variances with Theoretical Values
+Theoretical mean in the Gamma distribution is $\mu = \frac{k}{\lambda}$. The variance is $\sigma^2 = \frac{k}{\lambda^2}$.
+```{r}
+mean_sample1 <- mean(sample1)
+mean_sample2 <- mean(sample2)
+mean_sample3 <- mean(sample3)
+
+variance_sample1 <- var(sample1)
+variance_sample2 <- var(sample2)
+variance_sample3 <- var(sample3)
+
+# Comparison of sample means and variances with theoretical values
+theoretical_mean1 <- 5 / 0.5
+theoretical_mean2 <- 2 / 10
+theoretical_mean3 <- 4 / 3
+
+theoretical_variance1 <- 5 / (0.5^2)
+theoretical_variance2 <- 2 / (10^2)
+theoretical_variance3 <- 4 / (3^2)
+
+mean_comparison <- tibble(
+  Parameter = c("Sample 1", "Sample 2", "Sample 3"),
+  Theoretical_Mean = c(theoretical_mean1, theoretical_mean2, theoretical_mean3),
+  Sample_Mean = c(mean_sample1, mean_sample2, mean_sample3))
+
+variance_comparison <- tibble(
+  Parameter = c("Sample 1", "Sample 2", "Sample 3"),
+  Theoretical_Variance = c(theoretical_variance1, theoretical_variance2, theoretical_variance3),
+  Sample_Variance = c(variance_sample1, variance_sample2, variance_sample3))
+
+
+mean_comparison
+variance_comparison
+
+```
+
+The theoretical mean and the sample mean are close to each other. The sample mean is always greater than the theoretical mean. The theoretical variance and the sample variance are also close to each other, but the sample variance is greater than the theoretical variance. The sample is therefore consistent with the theoretical Gamma distribution model and reflects it well.
+
+
+1.3 Histograms of Each Sample and Comparison with Theoretical Density
+```{r}
+gamma_sample1 <- as_tibble(sample1) 
+gamma_sample2 <- as_tibble(sample2)
+gamma_sample3 <- as_tibble(sample3)
+
+hist1 <- ggplot(data=gamma_sample1, aes(x=value))+geom_histogram() + ggtitle('Histogram of Gamma Distribution Sample with Parameters lambda=0.5, k=5') + xlab('Value of Variable X') + ylab('Frequency')
+hist1
+hist2 <- ggplot(data=gamma_sample2, aes(x=value))+geom_histogram() + ggtitle('Histogram of Gamma Distribution Sample with Parameters lambda=10, k=2') + xlab('Value of Variable X') + ylab('Frequency')
+hist2
+hist3 <- ggplot(data=gamma_sample3, aes(x=value))+geom_histogram() + ggtitle('Histogram of Gamma Distribution Sample with Parameters lambda=3, k=4') + xlab('Value of Variable X') + ylab('Frequency')
+hist3
+
+
+gammas <- tibble(sample1,
+                 sample2,
+                 sample3)
+
+gamma_pivot <- gammas %>% 
+          pivot_longer(1:3, names_to = "distribution", values_to = "value")
+ggplot(data = gamma_pivot, aes(x=value)) + geom_histogram(bins = 15, fill = "lightblue") +
+  facet_wrap(~distribution, scales = "free") + 
+  theme(panel.background = element_blank())
+
+
+```
+
+The parameters of the Gamma distribution  ($\lambda$ and k) affect the shape and characteristics of the distribution. In the first histogram ($\lambda=0.5$, k=5) the distribution is concentrated around lower values, so the probability for lower values is higher. In the second histogram ($\lambda=10$, k=2), the distribution has a clear peak around the mean with a large tail. The third histogram ($\lambda=2$, k=4) is more uniform. The parameter $\lambda$ affects the concentration of values around the mean: the larger $\lambda$, the more concentrated the distribution is. The parameter k  affects the shape of the distribution. The smaller the value of
+k, the less extended the tail of the distribution.
+
+
+.4 Theoretical Cumulative Distribution Functions (CDFs)
+```{r}
+# CDFs
+sample_a <- seq(0, 11, length.out = 100)
+sample_b <- seq(0, 11, length.out = 100)
+sample_c <- seq(0, 11, length.out = 100)
+
+gamma_cdf1 <- tibble(sample_a, cdf = pgamma(sample_a, shape = 5))
+gamma_cdf2 <- tibble(sample_b, cdf = pgamma(sample_b, shape = 2))
+gamma_cdf3 <- tibble(sample_c, cdf = pgamma(sample_c, shape = 4))
+
+ggplot() +
+  geom_line(data = gamma_cdf1, aes(x = sample_a, y = cdf, color = "Shape = 5")) +
+  geom_line(data = gamma_cdf2, aes(x = sample_b, y = cdf, color = "Shape = 2")) +
+  geom_line(data = gamma_cdf3, aes(x = sample_c, y = cdf, color = "Shape = 4")) +
+  labs(x = "Sample Value", y = "Cumulative Distribution", title = "CDFs", color = "Shape Parameter") +
+  scale_color_manual(values = c("Shape = 5" = "hotpink", 
+                                "Shape = 2" = "blue", 
+                                "Shape = 4" = "green")) +
+  xlim(0, 11) + ylim(0, 1)
+
+```
+
+The CDF plots for different samples differ in shape. This suggests that the parameters in the samples ($\lambda$, k) were different. The smaller the parameter k, the faster the CDF increases. The higher the values in the sample, the more linear the increase in the CDF.
+
+*Boxplots of the samples
+
+```{r}
+sample11 <- as_tibble(sample1)
+sample22 <- as_tibble(sample2)
+sample33 <- as_tibble(sample3)
+
+plot1 <- ggplot(data=sample11, aes(x=sample1)) + geom_boxplot() + labs(x="Sample 1")
+plot2 <- ggplot(data=sample22, aes(x=sample2)) + geom_boxplot() + labs(x="Sample 2")
+plot3 <- ggplot(data=sample33, aes(x=sample3)) + geom_boxplot() + labs(x="Sample 3")
+
+ggarrange(plot1, plot2, plot3, ncol=1, nrow=3)
+```
+
+The boxes are similar to each other. Their right whiskers are definitely longer than the left ones. Additionally, for each sample, there are right outliers. The data distribution is right-skewed, meaning that most values are concentrated near the lower range, but some data points are exceptionally high. None of the samples have left outliers. This means that values in this part are more concentrated, and there are no extreme observations in this area. From the boxplots, we observe that for the first sample, the median is about 9, the first quartile is 7, and the third quartile is 12.5. The IQR is 5.5, so the lower whisker is -1.25, and the upper whisker is 20.75. For the second sample, we observe the median is about 0.2, the first quartile is about 0.1, and the third quartile is about 0.27. Therefore, the lower whisker is -0.155, and the upper whisker is 0.525. For the third sample, the median is about 1.2, the first quartile is about 0.8, and the third quartile is about 1.8. From this, the lower whisker is -0.7, and the upper whisker is 3.3. The first sample has very wide whiskers (from -1.25 to 20.75), suggesting potentially large variability and a stretched distribution (with possible outliers on the right side). The second sample has very narrow whiskers (-0.155 to 0.525), indicating greater stability and less variability. The third sample has moderate whiskers (-0.7 to 3.3), suggesting more variability than the second sample but less than the first.
+
+### Task 2 - Exponential Distribution as a Special Case of the Gamma Distribution
+
+Empirically verify (e.g., using a density plot) that the exponential distribution with parameter $\lambda$ is a special case of the Gamma distribution with parameters $\lambda$ and $k = 1$.
+
+```{R}
+set.seed(3141529)
+lambda <- 1
+comp_tibble <- tibble(rozklad_wykladniczy = rexp(n=3000, rate=lambda),
+                      rozklad_gamma = rgamma(n=3000, shape=1, rate=lambda))
+comp_tibble_piv <- comp_tibble %>% pivot_longer(1:2, names_to = "dist", values_to = "val")
+ggplot(comp_tibble_piv, aes(x=val)) + geom_histogram(bins = 10, fill = "lightpink") +
+  facet_grid(~dist, scales = "free") + 
+  theme(panel.background = element_blank())
+  
+```
+
+The above plots are very similar, suggesting that the exponential distribution with parameter $\lambda$ may be a special case of the Gamma distribution with parameters $\lambda$ and $k = 1$.
+
+We will verify this through calculations:
+
+For $k = 1$, the density of the Gamma distribution is:
+\[ f(x) = \frac{\lambda^1}{\Gamma(1)} x^{1-1}e^{-\lambda x}, \, \rm{dla}\, x \in (0, \infty). \] After simplification, we get:
+\[ f(x) = \lambda e^{-\lambda x}, \, \rm{dla}\, x \in (0, \infty), \] which is equal to the density of the exponential distribution.
+
+### Task 3
+
+Empirically verify (e.g., using density plots) that the sum of $k$ independent exponential variables with the same parameter $\lambda$ has a Gamma distribution with parameters $\lambda$ and $k$.
+```{r}
+lambda <- 10  
+k <- 50       
+n <- 10000    
+number_of_trials <- 4 
+
+for (i in 1:number_of_trials) {
+  set.seed(314 + i) 
+
+  sum_values <- numeric(n)
+  for (j in 1:k) {
+    sum_values <- sum_values + rexp(n, rate = lambda)
+  }
+  sum_tibble <- as_tibble(sum_values)
+  
+  sample_gamma <- rgamma(n, shape = k, rate = lambda)
+  gamma_tibble <- as_tibble(sample_gamma)
+
+  plot1 <- ggplot(sum_tibble, aes(x = sum_values)) +
+    geom_histogram(fill = "green", bins = 50) +
+    labs(title = paste0("Sum of Exponential Variables (Trial ", i, ")"),
+         x = "Values", y = "Frequency") +
+    theme_minimal()
+  
+
+  plot2 <- ggplot(gamma_tibble, aes(x = sample_gamma)) +
+    geom_histogram(fill = "hotpink", bins = 50) +
+    labs(title = paste0("Gamma Distribution (Trial ", i, ")"),
+         x = "Values", y = "Frequency") +
+    theme_minimal()
+  
+  print(ggarrange(plot1, plot2, ncol = 2, nrow = 1))
+}
+
+
+```
+
+The above plots are very similar. On all images, we can see that the most frequent values occur around the number 5, meaning the average is about 5. In addition, the plots are relatively steep and symmetric, despite having slightly longer right tails. The empirical histogram of the sum of exponential distributions is an estimate of the theoretical density of the Gamma distribution, which means that the sum of $k$ independent exponential variables with the same parameter $\lambda$ follows a Gamma distribution with parameters $\lambda$ and $k$.
+
+### Task 4
+
+Empirically verify (e.g., using density plots) the statement that if a variable $X$ follows a Gamma distribution with parameters $\lambda$, $k$, then the variable $cX$ (for some $c > 0$) follows a Gamma distribution with parameters $\frac{\lambda}{c}$, $k$.
+```{r}
+lambda <- 10
+k <- 50
+c = 4
+
+gamma_samples <- rgamma(n = n, shape = k, rate = lambda)  
+scaled_gamma_samples <- rgamma(n = n, shape = k, rate = lambda / c)  
+scaled_gamma_samples2 <- c * gamma_samples  
+
+compp_tibble <- tibble(
+  scaled_gamma = scaled_gamma_samples,
+  scaled_gamma2 = scaled_gamma_samples2
+)
+
+compp_tibble_piv <- compp_tibble %>% pivot_longer(1:2, names_to = "dist", values_to = "val")
+
+generate_plots <- function(seed) {
+  set.seed(seed)
+  
+  gamma_samples <- rgamma(n = n, shape = k, rate = lambda)
+  scaled_gamma_samples <- rgamma(n = n, shape = k, rate = lambda / c)
+  scaled_gamma_samples2 <- c * gamma_samples
+  
+  compp_tibble <- tibble(
+    scaled_gamma = scaled_gamma_samples,
+    scaled_gamma2 = scaled_gamma_samples2
+  )
+  
+  compp_tibble_piv <- compp_tibble %>% pivot_longer(1:2, names_to = "dist", values_to = "val")
+  
+  plot <- ggplot(compp_tibble_piv, aes(x = val, fill = dist)) +
+    geom_histogram(bins = 20, alpha = 0.6) +
+    facet_grid(~dist, scales = "free") +
+    labs(title = paste0("Comparison of Gamma Distribution Scaling (Trial ", seed, ")"),
+         x = "Values", y = "Frequency") +
+    theme_minimal()
+  
+  return(plot)
+}
+
+set_seeds <- c(314, 159, 265, 358)  
+all_plots <- lapply(set_seeds, generate_plots)
+
+for (plot in all_plots) {
+  print(plot) 
+}
+
+```
+
+In the above plots, we observe the similarity in the appearance of the histograms generated from the scaled Gamma distribution by a constant $c$ and the Gamma distribution with parameters $\frac{\lambda}{c}$, $k$. The slight differences in the histograms suggest minimal differences in the data generated from the sample, but the distribution of their densities is approximately the same. This empirically proves that if a variable $X$ follows a Gamma distribution with parameters $\lambda$, $k$, then the variable $cX$ (for some $c > 0$) follows a Gamma distribution with parameters $\frac{\lambda}{c}$, $k$.
+### Task 5*
+
+Compare the samples from the Gamma distribution with a fixed parameter $\lambda$ and large parameters $k$ (I suggest $k > 50$) and samples from the normal distribution with mean $\frac{k}{\lambda}$ and variance $\frac{k}{\lambda^2}$.
+```{r}
+set.seed(3141592)
+n1 = 10000
+lambda1 = 50
+k1 = 100
+k2 = 500
+k3 = 1000
+k4 = 10000
+
+gamma_dist1 <- rgamma(n1, shape = k1, rate = lambda1)
+gamma_dist11 <- as_tibble(gamma_dist1)
+gamma_dist2 <- rgamma(n1, shape = k2, rate = lambda1)
+gamma_dist22 <- as_tibble(gamma_dist2)
+gamma_dist3 <- rgamma(n1, shape = k3, rate = lambda1)
+gamma_dist33 <- as_tibble(gamma_dist3)
+gamma_dist4 <- rgamma(n1, shape = k4, rate = lambda1)
+gamma_dist44 <- as_tibble(gamma_dist4)
+
+normal_dist1 <- rnorm(n1, mean = k1 / lambda1, sd = k1 / lambda1**2)
+normal_dist11 <- as_tibble(normal_dist1)
+normal_dist2 <- rnorm(n1, mean = k2 / lambda1, sd = k2 / lambda1**2)
+normal_dist22 <- as_tibble(normal_dist2)
+normal_dist3 <- rnorm(n1, mean = k3 / lambda1, sd = k3 / lambda1**2)
+normal_dist33 <- as_tibble(normal_dist3)
+normal_dist4 <- rnorm(n1, mean = k4 / lambda1, sd = k4 / lambda1**2)
+normal_dist44 <- as_tibble(normal_dist4)
+
+plot_gamma1 <- ggplot(data = gamma_dist11, aes(x = gamma_dist1)) +
+  geom_histogram(fill = "hotpink", bins = 50) +
+  labs(title = "Gamma Distribution for k = 100", x = "Frequency", y = "Density")
+
+plot_normal1 <- ggplot(data = normal_dist11, aes(x = normal_dist1)) +
+  geom_histogram(fill = "green", bins = 50) +
+  labs(title = "Normal Distribution for k = 100", x = "Frequency", y = "Density")
+
+ggarrange(plot_gamma1, plot_normal1, nrow = 1, ncol = 2)
+
+plot_gamma2 <- ggplot(data = gamma_dist22, aes(x = gamma_dist2)) +
+  geom_histogram(fill = "hotpink", bins = 50) +
+  labs(title = "Gamma Distribution for k = 500", x = "Frequency", y = "Density")
+
+plot_normal2 <- ggplot(data = normal_dist22, aes(x = normal_dist2)) +
+  geom_histogram(fill = "green", bins = 50) +
+  labs(title = "Normal Distribution for k = 500", x = "Frequency", y = "Density")
+
+ggarrange(plot_gamma2, plot_normal2, nrow = 1, ncol = 2)
+
+plot_gamma3 <- ggplot(data = gamma_dist33, aes(x = gamma_dist3)) +
+  geom_histogram(fill = "hotpink", bins = 50) +
+  labs(title = "Gamma Distribution for k = 1000", x = "Frequency", y = "Density")
+
+plot_normal3 <- ggplot(data = normal_dist33, aes(x = normal_dist3)) +
+  geom_histogram(fill = "green", bins = 50) +
+  labs(title = "Normal Distribution for k = 1000", x = "Frequency", y = "Density")
+
+ggarrange(plot_gamma3, plot_normal3, nrow = 1, ncol = 2)
+
+plot_gamma4 <- ggplot(data = gamma_dist44, aes(x = gamma_dist4)) +
+  geom_histogram(fill = "hotpink", bins = 50) +
+  labs(title = "Gamma Distribution for k = 10000", x = "Frequency", y = "Density")
+
+plot_normal4 <- ggplot(data = normal_dist44, aes(x = normal_dist4)) +
+  geom_histogram(fill = "green", bins = 50) +
+  labs(title = "Normal Distribution for k = 10000", x = "Frequency", y = "Density")
+
+ggarrange(plot_gamma4, plot_normal4, nrow = 1, ncol = 2)
+
+```
+
+From the plots above, it is clear that as the parameter $k$ increases, the shape of the Gamma distribution becomes closer to the normal distribution. This is consistent with the central limit theorem, which states that the sum of a large number of independent random variables (each following the same distribution) tends to follow a normal distribution. As $k$ increases, the Gamma distribution with parameters $\lambda$ and $k$ approaches a normal distribution with mean $\frac{k}{\lambda}$ and variance $\frac{k}{\lambda^2}$.
+
+
+```{r}
+set.seed(3141592)
+n1 = 10000
+lambda1 = 50
+k1 = 100
+k2 = 500
+k3 = 1000
+k4 = 10000
+
+gamma_dist1 <- rgamma(n1, shape = k1, rate = lambda1)
+gamma_dist11 <- as_tibble(gamma_dist1)
+gamma_dist2 <- rgamma(n1, shape = k2, rate = lambda1)
+gamma_dist22 <- as_tibble(gamma_dist2)
+gamma_dist3 <- rgamma(n1, shape = k3, rate = lambda1)
+gamma_dist33 <- as_tibble(gamma_dist3)
+gamma_dist4 <- rgamma(n1, shape = k4, rate = lambda1)
+gamma_dist44 <- as_tibble(gamma_dist4)
+
+normal_dist1 <- rnorm(n1, mean = k1 / lambda1, sd = k1 / lambda1^2)
+normal_dist11 <- as_tibble(normal_dist1)
+normal_dist2 <- rnorm(n1, mean = k2 / lambda1, sd = k2 / lambda1^2)
+normal_dist22 <- as_tibble(normal_dist2)
+normal_dist3 <- rnorm(n1, mean = k3 / lambda1, sd = k3 / lambda1^2)
+normal_dist33 <- as_tibble(normal_dist3)
+normal_dist4 <- rnorm(n1, mean = k4 / lambda1, sd = k4 / lambda1^2)
+normal_dist44 <- as_tibble(normal_dist4)
+
+plot_gamma1 <- ggplot(data = gamma_dist11, aes(x = gamma_dist1)) +
+  geom_histogram(fill = "hotpink", bins = 50) +
+  labs(title = "Gamma Distribution for k = 100", x = "Frequency", y = "Density")
+
+plot_normal1 <- ggplot(data = normal_dist11, aes(x = normal_dist1)) +
+  geom_histogram(fill = "green", bins = 50) +
+  labs(title = "Normal Distribution for k = 100", x = "Frequency", y = "Density")
+
+ggarrange(plot_gamma1, plot_normal1, nrow = 1, ncol = 2)
+
+plot_gamma2 <- ggplot(data = gamma_dist22, aes(x = gamma_dist2)) +
+  geom_histogram(fill = "hotpink", bins = 50) +
+  labs(title = "Gamma Distribution for k = 500", x = "Frequency", y = "Density")
+
+plot_normal2 <- ggplot(data = normal_dist22, aes(x = normal_dist2)) +
+  geom_histogram(fill = "green", bins = 50) +
+  labs(title = "Normal Distribution for k = 500", x = "Frequency", y = "Density")
+
+ggarrange(plot_gamma2, plot_normal2, nrow = 1, ncol = 2)
+
+plot_gamma3 <- ggplot(data = gamma_dist33, aes(x = gamma_dist3)) +
+  geom_histogram(fill = "hotpink", bins = 50) +
+  labs(title = "Gamma Distribution for k = 1000", x = "Frequency", y = "Density")
+
+plot_normal3 <- ggplot(data = normal_dist33, aes(x = normal_dist3)) +
+  geom_histogram(fill = "green", bins = 50) +
+  labs(title = "Normal Distribution for k = 1000", x = "Frequency", y = "Density")
+
+ggarrange(plot_gamma3, plot_normal3, nrow = 1, ncol = 2)
+
+plot_gamma4 <- ggplot(data = gamma_dist44, aes(x = gamma_dist4)) +
+  geom_histogram(fill = "hotpink", bins = 50) +
+  labs(title = "Gamma Distribution for k = 10000", x = "Frequency", y = "Density")
+
+plot_normal4 <- ggplot(data = normal_dist44, aes(x = normal_dist4)) +
+  geom_histogram(fill = "green", bins = 50) +
+  labs(title = "Normal Distribution for k = 10000", x = "Frequency", y = "Density")
+
+ggarrange(plot_gamma4, plot_normal4, nrow = 1, ncol = 2)
+
+```
+
+It is evident that the plots are similar. For the Gamma distribution sample, regardless of the parameter $k$, the median is slightly smaller than in the case of the normal distribution sample. In each case, for each plot, we observe that both left and right outliers appear. They are relatively symmetric, though we cannot speak of complete symmetry. It can be said that the whiskers are symmetric. Because they are so similar, we can conclude that the normal distribution with a mean of $\frac{k}{\lambda}$ and variance of $\frac{k}{\lambda^2}$ is a good approximation of the Gamma distribution with parameter $\lambda$ and large $k$ values. We notice that the larger the parameter $k$, the more similar the plots become, so it is likely that the larger the $k$, the better the approximation.
+
+
+
+
+
+
+
+
