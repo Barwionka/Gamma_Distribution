@@ -1,0 +1,3 @@
+The project focuses on the Gamma distribution, its properties, and its applications in statistics. It involves generating samples from the Gamma distribution, comparing empirical values with theoretical expectations, and visualizing the distribution using histograms and cumulative distribution functions. Additionally, it explores special cases, such as the relationship between the exponential and Gamma distributions and the sum of exponential variables. Finally, the project examines the connection between the Gamma distribution and the normal distribution for large values of the shape parameter 
+𝑘
+k.
